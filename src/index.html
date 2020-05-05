@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Hello World!</title>
+    <link rel="stylesheet" href="index.css">
+  </head>
+  <body>
+    <h1>💖 Hello World!</h1>
+    <p>Test</p>
+
+    <button onclick="test()">Click</button>
+
+    <script>
+       //require('./main.js')
+
+       const { ipcRenderer } = require('electron');
+
+       let data = {
+         message: "hi"
+       };
+
+       function test() {
+         console.log('hello')
+        ipcRenderer.send('open-dialog', data);
+       }
+
+    </script>
+  </body>
+</html>
