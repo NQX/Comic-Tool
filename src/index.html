@@ -11,8 +11,18 @@
 
     <button onclick="test()">Click</button>
 
+    <div>
+      <ul id="list">
+        
+      </ul>
+    </div>
+
     <script>
        //require('./main.js')
+
+
+
+       var list = document.getElementById("list");
 
        const { ipcRenderer } = require('electron');
 
@@ -23,6 +33,28 @@
        function test() {
          console.log('hello')
         ipcRenderer.send('open-dialog', data);
+       }
+
+       ipcRenderer.on('event', function(event, data) {
+         let item = data.filePaths[0]
+
+         item = stripPath(item)
+         
+         var li = document.createElement("li");
+        list.appendChild(document.createTextNode(item));
+       })
+
+
+
+       function stripPath(path) {
+        let parts = path.split('/')
+        return parts[parts.length-1]
+       }
+
+       //drag drop
+       list.ondragstart = (event) => {
+         event.preventDefault()
+         ipcRenderer.send('ondragstart', 'msg')
        }
 
     </script>
