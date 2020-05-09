@@ -1,4 +1,9 @@
-const { app, BrowserWindow, dialog, ipcMain } = require('electron');
+const {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain
+} = require('electron');
 const path = require('path');
 
 var fs = require("fs")
@@ -9,6 +14,9 @@ var temp = require('temp');
 
 
 var mainWindow;
+
+var filesArray = [];
+
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) { // eslint-disable-line global-require
@@ -62,64 +70,182 @@ ipcMain.on('ondragstart', (event, filePath) => {
     file: filePath,
     icon: "msg2"
   })
+});
+
+
+ipcMain.on('start-convert', (event, arg) => {
+  createFolders();
+
+
+  for (let i = 0; i < filesArray.length; i++) {
+    console.log(filesArray[i])
+    unzip(filesArray[i])
+  }
 })
 
 
 
 ipcMain.on('open-dialog', (event, arg) => {
-   getFileFromUser()
+  getFileFromUser()
 })
 
 const getFileFromUser = async () => {
-  const files = await dialog.showOpenDialog({ properties: ['openFile', 'multiSelections'] })
-  console.log(files)
+  const files = await dialog.showOpenDialog({
+    properties: ['openFile', 'multiSelections']
+  })
+  console.log(files.filePaths[0])
+  filesArray.push(files.filePaths[0]);
 
-  mainWindow.webContents.send('event',files)
+  mainWindow.webContents.send('event', files)
 
-   
+
 }
 
 
 
+function createFolders() {
+  fs.exists(__dirname + '/tmp', (exists) => {
+    if (!exists) {
+      fs.mkdir(__dirname + '/tmp', () => {});
+    }
+  });
 
-function test() {
-  let dir = "/Users/tobiaszillmer/Coding/Comic-Tool/src/img/"
-  let i = 0;
+  fs.exists(__dirname + '/webp', (exists) => {
+    if (!exists) {
+      fs.mkdir(__dirname + '/webp', () => {});
+    }
+  });
+
+
+}
+
+
+
+function convertBatch() {
+  let dir = "/Users/tobiaszillmer/Coding/Comic-Tool/src/tmp/"
 
   fs.readdir(dir, (err, files) => {
-    console.log(err)
-    files.forEach(file => {
-      
-      //console.log(file);
+    hasEmptySpaces(dir, files[0], function () {
 
 
-      if(isJpgFile(file))
-      console.log(file, 'is jpg')
-        convertToWebp(dir + file, i++);
-    });
+      fs.readdir(dir, (err, files) => {
+        //console.log('fff', files)
+        convertComic(dir + files[0])
+      })
+
+
+    })
   });
+
+
+
+  //
 }
+
+function hasEmptySpaces(dir, files, cb) {
+  if (files.indexOf(" ")) {
+    fs.rename(dir + files, dir + removeSpaces(files), function (err) {
+      if (err) {
+        console.log(err)
+      } else {
+        console.log("Successfully renamed the directory.")
+        cb();
+      }
+    })
+  }
+}
+
+function convertComic(filePath) {
+
+  let i = 0;
+
+  fs.readdir(filePath, (err, files) => {
+    files.forEach(file => {
+      if (isJpgFile(file)) {
+        anotherName(filePath, file, function () {
+          
+        })
+
+      }
+    });
+  })
+
+convert(filePath);
+
+
+}
+
+
+
+
+function convert(filePath) {
+  
+  let dir = "/Users/tobiaszillmer/Coding/Comic-Tool/src/tmp/"
+  
+  i = 0;
+
+  fs.readdir(dir, (err, files) => {
+    fs.readdir(dir +'/' + files, (err, file) => {
+    console.log(file)
+      file.forEach(item => {
+        console.log('eeee', dir, files[0], '/', item)
+        convertToWebp(dir  + '/' + files[0] + '/', item); 
+      })
+    });
+  }
+  
+
+  );
+
+  
+}
+
+
+
+function anotherName(filePath, fileName, cb) {
+  //console.log('input', filePath + '   ' + fileName)
+  //console.log('out', filePath + '   ' + removeSpaces(fileName) + '   ' + '.webp')
+  fs.rename(filePath + '/' + fileName, filePath + '/' + removeSpaces(fileName), () => {
+    //console.log('done rename', newName)
+    cb();
+  })
+}
+
+
+
 
 
 function isJpgFile(file) {
-  if(file.search(".jpg") != -1 || file.search(".jpeg") != -1 ) {
+  if (file.search(".jpg") != -1 || file.search(".jpeg") != -1) {
     return true;
   } else {
     return false;
   }
 }
 
-function renameFile(file) {
-
+function renameFile(filePath, cb) {
+  fs.rename(removeSpaces(filePath), filePath, () => {
+    cb();
+  })
 }
 
 
 
-async function unzip () {
-  console.log('in main')
+function removeSpaces(fileName) {
+  //console.log('name', fileName)
+  fileName = fileName.replace(/\s/g, '')
+  return fileName
+}
+
+
+
+async function unzip(file) {
   try {
-    await zip(path.resolve(__dirname, "a.cbz"), { dir: "/Users/tobiaszillmer/Coding/Comic-Tool/test" })
+    await zip(path.resolve(file), {
+      dir: "/Users/tobiaszillmer/Coding/Comic-Tool/src/tmp/"
+    })
     console.log('Extraction complete')
+    convertBatch()
   } catch (err) {
     // handle any errors
   }
@@ -128,19 +254,25 @@ async function unzip () {
 
 let outputDir = "/Users/tobiaszillmer/Coding/Comic-Tool/src/webp/"
 
-function convertToWebp(input, out) {
+function convertToWebp(inputPath, fileName) {
+  console.log(' output dir',inputPath, fileName)
 
-  console.log(outputDir, out)
-
-  webp.cwebp(input, outputDir + out + ".webp","-q 80",function(status,error)
-    {
-      //if conversion successful status will be '100'
-      //if conversion fails status will be '101'
-      console.log(status,error);	
-    });
+  
+  
+  webp.cwebp(inputPath + '/' + fileName, outputDir + removeFileEnd(fileName) + ".webp", "-q 80", function (status, error) {
+    //if conversion successful status will be '100'
+    //if conversion fails status will be '101'
+    console.log(status, error);
+  });
+  
 }
 
 
+
+function removeFileEnd(fileName) {
+  let tmp = fileName.split('.')
+  return tmp[0]
+}
 
 /*
 var buf = Uint8Array.from(fs.readFileSync(path.resolve(__dirname, "a.cbr"))).buffer;
@@ -166,4 +298,3 @@ if (list[0].state === "SUCCESS") {
   }
 }
 */
-
