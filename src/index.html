@@ -1,84 +1,95 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-8">
-    <title>Hello World!</title>
-    <link rel="stylesheet" href="index.css">
-  </head>
-  <body>
-    <h1>💖 Hello World!</h1>
-    <p>Test</p>
 
-    <button onclick="addFile()">Add File</button>
-    <button onclick="convert()">Convert</button>
+<head>
+  <meta charset="UTF-8">
+  <title>Hello World!</title>
+  <link rel="stylesheet" href="index.css">
+</head>
 
-    <div>
-      <ul id="list">
-        
-      </ul>
+<body>
+  <h1>💖 Hello World!</h1>
+  <p>Test</p>
 
-      <table>
-        <tr>
-          <th>Filename</th>
-          <th>Size</th>
-          <th>Size new</th>
-        </tr>
-        <tr>
-          <td>a</td>
-          <td>a</td>
-          <td>a</td>
-        </tr>
-        <tr>
-          <td>a</td>
-          <td>a</td>
-          <td>a</td>
-        </tr>
-      </table>
-    </div>
+  <button onclick="addFile()">Add File</button>
+  <button onclick="convert()">Convert</button>
 
-    <script>
-       //require('./main.js')
+  <label>Quality</label>
+  <input id="quality" type="text" value="80">
 
+  <div>
+    <ul id="list">
 
+    </ul>
 
-       var list = document.getElementById("list");
+    <table>
+      <tr>
+        <th>Filename</th>
+        <th>Size</th>
+        <th>Size new</th>
+      </tr>
+      <tr>
+        <td>a</td>
+        <td>a</td>
+        <td>a</td>
+      </tr>
+      <tr>
+        <td>a</td>
+        <td>a</td>
+        <td>a</td>
+      </tr>
+    </table>
+  </div>
 
-       const { ipcRenderer } = require('electron');
+  <script>
+    //require('./main.js')
 
-       let data = {
-         message: "hi"
-       };
+    var _quality = document.getElementById('quality').value
 
-       function addFile() {
-        ipcRenderer.send('open-dialog', data);
-       }
+    var list = document.getElementById("list");
 
-       ipcRenderer.on('event', function(event, data) {
-         let item = data.filePaths[0]
+    const {
+      ipcRenderer
+    } = require('electron');
 
-         item = stripPath(item)
-         
-         var li = document.createElement("li");
+    let data = {
+      message: "hi"
+    };
+
+    function addFile() {
+      ipcRenderer.send('open-dialog', data);
+    }
+
+    ipcRenderer.on('event', function (event, data) {
+      if(data.filePaths[0] != undefined) {
+        let item = data.filePaths[0]
+
+        item = stripPath(item)
+
+        var li = document.createElement("li");
         list.appendChild(document.createTextNode(item));
-       })
+      }
+    })
 
 
-       function convert() {
-        ipcRenderer.send('start-convert', {});
-       }
+    function convert() {
+      ipcRenderer.send('start-convert', {
+        quality: _quality
+      });
+    }
 
 
-       function stripPath(path) {
-        let parts = path.split('/')
-        return parts[parts.length-1]
-       }
+    function stripPath(path) {
+      let parts = path.split('/')
+      return parts[parts.length - 1]
+    }
 
-       //drag drop
-       list.ondragstart = (event) => {
-         event.preventDefault()
-         ipcRenderer.send('ondragstart', 'msg')
-       }
+    //drag drop
+    list.ondragstart = (event) => {
+      event.preventDefault()
+      ipcRenderer.send('ondragstart', 'msg')
+    }
+  </script>
+</body>
 
-    </script>
-  </body>
 </html>

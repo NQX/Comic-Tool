@@ -45,12 +45,16 @@
     }
   },
   "dependencies": {
+    "adm-zip": "^0.4.14",
+    "archiver": "^4.0.1",
     "electron-squirrel-startup": "^1.0.0",
     "electron-unrar-js": "^1.0.1",
     "extract-zip": "^2.0.0",
     "node-unrar-js": "^0.8.1",
+    "rimraf": "^3.0.2",
     "temp": "^0.9.1",
-    "webp-converter": "^2.2.3"
+    "webp-converter": "^2.2.3",
+    "zip-a-folder": "0.0.12"
   },
   "devDependencies": {
     "@electron-forge/cli": "^6.0.0-beta.51",

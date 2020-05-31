@@ -10,13 +10,18 @@ var fs = require("fs")
 var webp = require('webp-converter');
 var unrar = require("node-unrar-js");
 var zip = require('extract-zip');
+var zipFolder = require('zip-a-folder');
+var rimraf = require('rimraf');
 var temp = require('temp');
 
+var originalFilename = '';
 
 var mainWindow;
-
+var qualtiy = 80;
 var filesArray = [];
 
+var fileCounter = 0;
+var totalFilesCount = 0;
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) { // eslint-disable-line global-require
@@ -66,20 +71,23 @@ app.on('activate', () => {
 
 
 ipcMain.on('ondragstart', (event, filePath) => {
-  event.sender.startDrag({
-    file: filePath,
-    icon: "msg2"
-  })
+    
+    event.sender.startDrag({
+      file: filePath,
+      icon: "msg2"
+    })
+  
 });
 
 
 ipcMain.on('start-convert', (event, arg) => {
+  quality = arg.quality
   createFolders();
 
 
   for (let i = 0; i < filesArray.length; i++) {
-    console.log(filesArray[i])
-    unzip(filesArray[i])
+    console.log('start', filesArray[i])
+    //unzip(filesArray[i])
   }
 })
 
@@ -122,9 +130,11 @@ function createFolders() {
 
 
 function convertBatch() {
-  let dir = "/Users/tobiaszillmer/Coding/Comic-Tool/src/tmp/"
+  let dir = __dirname + "/tmp/"
 
   fs.readdir(dir, (err, files) => {
+    
+    
     hasEmptySpaces(dir, files[0], function () {
 
 
@@ -180,17 +190,20 @@ convert(filePath);
 
 function convert(filePath) {
   
-  let dir = "/Users/tobiaszillmer/Coding/Comic-Tool/src/tmp/"
+  let dir = __dirname + "/tmp/"
   
   i = 0;
 
   fs.readdir(dir, (err, files) => {
     fs.readdir(dir +'/' + files, (err, file) => {
-    console.log(file)
+    console.log('length',file.length)
+    totalFilesCount = file.length
       file.forEach(item => {
         console.log('eeee', dir, files[0], '/', item)
         convertToWebp(dir  + '/' + files[0] + '/', item); 
       })
+
+  
     });
   }
   
@@ -233,38 +246,73 @@ function renameFile(filePath, cb) {
 
 function removeSpaces(fileName) {
   //console.log('name', fileName)
-  fileName = fileName.replace(/\s/g, '')
+  fileName = fileName.replace(/\s/g, '-')
   return fileName
 }
 
 
 
 async function unzip(file) {
+  console.log('unzip', file, __dirname)
   try {
     await zip(path.resolve(file), {
-      dir: "/Users/tobiaszillmer/Coding/Comic-Tool/src/tmp/"
-    })
+      dir: __dirname + "/tmp/"
+    },)
     console.log('Extraction complete')
     convertBatch()
   } catch (err) {
+    console.log('unzip error', err)
     // handle any errors
   }
 }
 
 
-let outputDir = "/Users/tobiaszillmer/Coding/Comic-Tool/src/webp/"
+let outputDir = __dirname + "/webp/"
+
+
+
 
 function convertToWebp(inputPath, fileName) {
   console.log(' output dir',inputPath, fileName)
 
   
   
-  webp.cwebp(inputPath + '/' + fileName, outputDir + removeFileEnd(fileName) + ".webp", "-q 80", function (status, error) {
+  webp.cwebp(inputPath + '/' + fileName, outputDir + removeFileEnd(fileName) + ".webp", "-q "+quality, function (status, error) {
     //if conversion successful status will be '100'
     //if conversion fails status will be '101'
     console.log(status, error);
+    fileCounter++;
+    if(fileCounter == totalFilesCount) {
+      console.log('conversion complete')
+      
+      packFiles();
+    }
   });
   
+  
+}
+
+
+function  packFiles() {
+    zipFolder.zipFolder(__dirname  + '/webp', __dirname + "/out.cbz", function(err) {
+    if(err) {
+      console.log('oh no!', err);
+  } else {
+      console.log('EXCELLENT');
+      deleteFolders();
+  }
+  })
+}
+
+
+function deleteFolders() {
+  rimraf(__dirname + '/webp',() => {
+    console.log('done')
+  });
+
+  rimraf(__dirname + '/tmp',() => {
+    console.log('done 2')
+  })
 }
 
 
@@ -273,6 +321,7 @@ function removeFileEnd(fileName) {
   let tmp = fileName.split('.')
   return tmp[0]
 }
+
 
 /*
 var buf = Uint8Array.from(fs.readFileSync(path.resolve(__dirname, "a.cbr"))).buffer;
