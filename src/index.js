@@ -85,9 +85,25 @@ ipcMain.on('start-convert', (event, arg) => {
   createFolders();
 
 
+  //main loop 
   for (let i = 0; i < filesArray.length; i++) {
-    console.log('start', filesArray[i])
-    //unzip(filesArray[i])
+    let promiseArray = [];
+
+    if(hasEmptySpaces(filesArray[i].file)) {
+      console.log('trueee')
+      promiseArray.push(renameFile(filesArray[i]))
+    } else {
+      console.log('go on')
+    }
+
+    
+    Promise.all(promiseArray).then(() => {
+      //console.log('later',filesArray[i])
+      unzip(filesArray[i])
+    })
+    .catch(reason => {
+      console.log(reason)
+    })
   }
 })
 
@@ -101,8 +117,22 @@ const getFileFromUser = async () => {
   const files = await dialog.showOpenDialog({
     properties: ['openFile', 'multiSelections']
   })
-  console.log(files.filePaths[0])
-  filesArray.push(files.filePaths[0]);
+
+  let parts = files.filePaths[0].split('/')
+
+  let thePath = files.filePaths[0].substring(0, files.filePaths[0].length - parts[parts.length-1].length)
+  
+  //console.log('length', parts[parts.length-1], parts[parts.length-1].length)
+
+  let fileObject = {
+    fullpath: files.filePaths[0],
+    file: parts[parts.length-1],
+    path: thePath,
+    originalName: parts[parts.length-1]
+  }
+
+  //console.log(tmp)
+  filesArray.push(fileObject);
 
   mainWindow.webContents.send('event', files)
 
@@ -134,7 +164,15 @@ function convertBatch() {
 
   fs.readdir(dir, (err, files) => {
     
-    
+    /*
+    if(hasEmptySpaces(files[0])) {
+      removeSpaces(dir, files[0], )
+
+      }
+    }
+    */
+
+
     hasEmptySpaces(dir, files[0], function () {
 
 
@@ -146,12 +184,42 @@ function convertBatch() {
 
     })
   });
-
-
-
-  //
 }
 
+
+function bla() {
+  return new Promise((resolve, reject) => {
+    let a = 1 + 1
+  
+    if(a == 2) {
+      resolve('succ')
+    } else {
+      reject('failed')
+    }
+  });
+}
+
+ 
+
+
+bla().then( (msg) => {
+  console.log('this', msg)
+}).catch((msg) => {
+  console.log('this ia err', msg)
+})
+
+
+function hasEmptySpaces(name) {
+  console.log(name)
+  if (name.indexOf(" ") >= 0) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+
+/*
 function hasEmptySpaces(dir, files, cb) {
   if (files.indexOf(" ")) {
     fs.rename(dir + files, dir + removeSpaces(files), function (err) {
@@ -164,6 +232,7 @@ function hasEmptySpaces(dir, files, cb) {
     })
   }
 }
+*/
 
 function convertComic(filePath) {
 
@@ -237,8 +306,16 @@ function isJpgFile(file) {
 }
 
 function renameFile(filePath, cb) {
-  fs.rename(removeSpaces(filePath), filePath, () => {
-    cb();
+  return new Promise((resolve, reject) => {
+    //console.log('aaa',removeSpaces(filePath.fullpath))
+    fs.rename(filePath.fullpath, removeSpaces(filePath.fullpath), (err) => {
+      filePath.file = removeSpaces(filePath.file)
+      filePath.fullpath = filePath.path + filePath.file
+      //console.log('err', err)
+      resolve()
+    })
+
+
   })
 }
 
@@ -253,7 +330,9 @@ function removeSpaces(fileName) {
 
 
 async function unzip(file) {
-  console.log('unzip', file, __dirname)
+  console.log('unzip', file)
+
+  /*
   try {
     await zip(path.resolve(file), {
       dir: __dirname + "/tmp/"
@@ -264,6 +343,7 @@ async function unzip(file) {
     console.log('unzip error', err)
     // handle any errors
   }
+  */
 }
 
 
