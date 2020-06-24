@@ -1,5 +1,5 @@
 
-//convert batch   afte unzip, check for empty spaces
+//unrar   continue after unrar
 //maybe remove promise all in first rename 
 
 const {
@@ -12,11 +12,13 @@ const path = require('path');
 
 var fs = require("fs")
 var webp = require('webp-converter');
-var unrar = require("node-unrar-js");
+var unrar = require("node-unrar");
 var zip = require('extract-zip');
 var zipFolder = require('zip-a-folder');
 var rimraf = require('rimraf');
 var temp = require('temp');
+
+var nrc = require('node-run-cmd');
 
 var originalFilename = '';
 
@@ -109,7 +111,7 @@ ipcMain.on('start-convert', (event, arg) => {
         unzip(filesArray[i])
       } else if(getFileEnd(filesArray[i].file) == 'cbr') {
         console.log('rar')
-        //unrar(filesArray[i])
+        unrarFile(filesArray[i])
       }
     
     })
@@ -353,6 +355,30 @@ let outputDir = __dirname + "/webp/"
 
 
 
+
+function unrarFile(file) {
+
+  var rar = new unrar(file.fullpath)
+
+  
+  rar.extract(file.path + "tmp/", null, function(err) {
+    if(err) {
+      console.log(err)
+      return;
+    }
+
+    //convertBatch(file)
+  })
+  
+}
+
+
+
+
+
+
+
+
 function convertToWebp(inputPath, fileName) {
   console.log(' output dir',inputPath, fileName)
 
@@ -410,27 +436,5 @@ function getFileEnd(filename) {
 }
 
 
-/*
-var buf = Uint8Array.from(fs.readFileSync(path.resolve(__dirname, "a.cbr"))).buffer;
 
-var extractor = unrar.createExtractorFromData(buf);
- 
-var list = extractor.getFileList();
 
-console.log(list)
-//if (list[0].state === "SUCCESS") {
-  //list[1].arcHeader...
-  //list[1].fileHeaders[...]
-//}
- 
-
-var extracted = extractor.extractAll();
-//var extracted = extractor.extractFiles(["1.txt", "1.txt"], "password")();
-if (list[0].state === "SUCCESS") {
-  //list[1].arcHeader...
-  //list[1].files[0].fileHeader: ..
-  if (list[1].files[0].extract[0].state === "SUCCESS") {
-    list[1].files[0].extract[1] // Uint8Array
-  }
-}
-*/
