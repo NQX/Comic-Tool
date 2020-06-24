@@ -49,6 +49,8 @@ const createWindow = () => {
 
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
+
+  createFolders();
 };
 
 // This method will be called when Electron has finished
@@ -88,7 +90,6 @@ ipcMain.on('ondragstart', (event, filePath) => {
 
 ipcMain.on('start-convert', (event, arg) => {
   quality = arg.quality
-  createFolders();
 
 
   //main loop 
@@ -158,13 +159,13 @@ const getFileFromUser = async () => {
 function createFolders() {
   fs.exists(__dirname + '/tmp', (exists) => {
     if (!exists) {
-      fs.mkdir(__dirname + '/tmp', () => {});
+      fs.mkdirSync(__dirname + '/tmp', () => {});
     }
   });
 
   fs.exists(__dirname + '/webp', (exists) => {
     if (!exists) {
-      fs.mkdir(__dirname + '/webp', () => {});
+      fs.mkdirSync(__dirname + '/webp', () => {});
     }
   });
 
@@ -180,8 +181,14 @@ function convertBatch(file) {
     
     if(hasEmptySpaces(files[0])) {
       //console.log('needs rename', file.path, files[0])
-      fs.renameSync(file.path + "tmp/" + files[0], file.path + "tmp/" + removeSpaces(files[0]), function(err) {
-        console.log(err)
+      console.log('rename', file.path + "tmp/" + files[0], file.path + "tmp/" + removeSpaces(files[0]))
+      fs.rename(file.path + "tmp/" + files[0], file.path + "tmp/" + removeSpaces(files[0]), function(err) {
+        if(err) {
+          console.log(err)
+          return;
+        }
+
+        console.log('done rename')
       })
     }
     convertComic(dir + removeSpaces(files[0]))
@@ -326,7 +333,7 @@ function renameFile(filePath, cb) {
 
 
 function removeSpaces(fileName) {
-  //console.log('name', fileName)
+  console.log('name', fileName)
   fileName = fileName.replace(/\s/g, '-')
   return fileName
 }
@@ -358,17 +365,39 @@ let outputDir = __dirname + "/webp/"
 
 function unrarFile(file) {
 
+
   var rar = new unrar(file.fullpath)
 
-  
-  rar.extract(file.path + "tmp/", null, function(err) {
-    if(err) {
-      console.log(err)
-      return;
-    }
+  console.log(file)
 
-    //convertBatch(file)
+  let newDirectoryName = removeFileEnd(file.file)
+
+  console.log(newDirectoryName)
+
+  
+
+  fs.mkdir(__dirname + '/tmp/' + newDirectoryName, function(err) {
+    if(err) console.log(err)
+
+
+    
+    rar.extract(file.path + "tmp/" + newDirectoryName, null, function(err) {
+      if(err) {
+        console.log(err)
+        return;
+      }
+
+      
+  
+      //console.log('done unrar ', file)
+      convertBatch(file)
+    })
+
+    
+
   })
+
+  
   
 }
 
@@ -434,6 +463,8 @@ function getFileEnd(filename) {
   //console.log('aaa', tmp.length)
   return tmp[tmp.length-1]
 }
+
+
 
 
 
