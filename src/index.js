@@ -1,3 +1,7 @@
+
+//convert batch   afte unzip, check for empty spaces
+//maybe remove promise all in first rename 
+
 const {
   app,
   BrowserWindow,
@@ -86,20 +90,28 @@ ipcMain.on('start-convert', (event, arg) => {
 
 
   //main loop 
-  for (let i = 0; i < filesArray.length; i++) {
+  for (let i = 0; i < filesArray.length; i++) { 
     let promiseArray = [];
 
     if(hasEmptySpaces(filesArray[i].file)) {
       console.log('trueee')
       promiseArray.push(renameFile(filesArray[i]))
     } else {
-      console.log('go on')
+      //console.log('go on')
     }
 
     
     Promise.all(promiseArray).then(() => {
-      //console.log('later',filesArray[i])
-      unzip(filesArray[i])
+      //console.log('later', getFileEnd(filesArray[i].file))
+
+      if(getFileEnd(filesArray[i].file) == 'cbz') {
+        console.log('zip')
+        unzip(filesArray[i])
+      } else if(getFileEnd(filesArray[i].file) == 'cbr') {
+        console.log('rar')
+        //unrar(filesArray[i])
+      }
+    
     })
     .catch(reason => {
       console.log(reason)
@@ -159,8 +171,22 @@ function createFolders() {
 
 
 
-function convertBatch() {
+function convertBatch(file) {
   let dir = __dirname + "/tmp/"
+
+  fs.readdir(dir, (err, files) => {
+    
+    if(hasEmptySpaces(files[0])) {
+      //console.log('needs rename', file.path, files[0])
+      fs.renameSync(file.path + "tmp/" + files[0], file.path + "tmp/" + removeSpaces(files[0]), function(err) {
+        console.log(err)
+      })
+    }
+    convertComic(dir + removeSpaces(files[0]))
+  })
+
+  //
+  
 
   fs.readdir(dir, (err, files) => {
     
@@ -176,10 +202,7 @@ function convertBatch() {
     hasEmptySpaces(dir, files[0], function () {
 
 
-      fs.readdir(dir, (err, files) => {
-        //console.log('fff', files)
-        convertComic(dir + files[0])
-      })
+      
 
 
     })
@@ -187,30 +210,10 @@ function convertBatch() {
 }
 
 
-function bla() {
-  return new Promise((resolve, reject) => {
-    let a = 1 + 1
-  
-    if(a == 2) {
-      resolve('succ')
-    } else {
-      reject('failed')
-    }
-  });
-}
-
- 
-
-
-bla().then( (msg) => {
-  console.log('this', msg)
-}).catch((msg) => {
-  console.log('this ia err', msg)
-})
 
 
 function hasEmptySpaces(name) {
-  console.log(name)
+  //console.log(name)
   if (name.indexOf(" ") >= 0) {
     return true;
   } else {
@@ -236,13 +239,14 @@ function hasEmptySpaces(dir, files, cb) {
 
 function convertComic(filePath) {
 
+  
   let i = 0;
 
   fs.readdir(filePath, (err, files) => {
     files.forEach(file => {
       if (isJpgFile(file)) {
         anotherName(filePath, file, function () {
-          
+
         })
 
       }
@@ -265,10 +269,10 @@ function convert(filePath) {
 
   fs.readdir(dir, (err, files) => {
     fs.readdir(dir +'/' + files, (err, file) => {
-    console.log('length',file.length)
+    //console.log('length',file.length)
     totalFilesCount = file.length
       file.forEach(item => {
-        console.log('eeee', dir, files[0], '/', item)
+        //console.log('eeee', dir, files[0], '/', item)
         convertToWebp(dir  + '/' + files[0] + '/', item); 
       })
 
@@ -285,10 +289,8 @@ function convert(filePath) {
 
 
 function anotherName(filePath, fileName, cb) {
-  //console.log('input', filePath + '   ' + fileName)
-  //console.log('out', filePath + '   ' + removeSpaces(fileName) + '   ' + '.webp')
   fs.rename(filePath + '/' + fileName, filePath + '/' + removeSpaces(fileName), () => {
-    //console.log('done rename', newName)
+
     cb();
   })
 }
@@ -330,20 +332,19 @@ function removeSpaces(fileName) {
 
 
 async function unzip(file) {
-  console.log('unzip', file)
+  //console.log('unzip', file)
 
-  /*
   try {
-    await zip(path.resolve(file), {
+    await zip(path.resolve(file.fullpath), {
       dir: __dirname + "/tmp/"
     },)
     console.log('Extraction complete')
-    convertBatch()
+    convertBatch(file)
   } catch (err) {
     console.log('unzip error', err)
     // handle any errors
   }
-  */
+  
 }
 
 
@@ -400,6 +401,12 @@ function deleteFolders() {
 function removeFileEnd(fileName) {
   let tmp = fileName.split('.')
   return tmp[0]
+}
+
+function getFileEnd(filename) {
+  let tmp = filename.split('.')
+  //console.log('aaa', tmp.length)
+  return tmp[tmp.length-1]
 }
 
 
