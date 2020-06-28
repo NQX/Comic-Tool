@@ -15,7 +15,7 @@
   <button onclick="convert()">Convert</button>
 
   <label>Quality</label>
-  <input id="quality" type="text" value="80">
+  <input id="quality" type="text" value="40">
 
   <div>
     <ul id="list">
@@ -86,7 +86,9 @@
 
     //drag drop
     list.ondragstart = (event) => {
-      event.preventDefault()
+      
+      event.preventDefault();
+      console.log('start drag')
       ipcRenderer.send('ondragstart', 'msg')
     }
   </script>
