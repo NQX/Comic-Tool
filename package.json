@@ -53,7 +53,7 @@
     "node-unrar": "^0.1.5",
     "rimraf": "^3.0.2",
     "temp": "^0.9.1",
-    "webp-converter": "^2.2.3",
+    "webp-converter": "^2.3.3",
     "zip-a-folder": "0.0.12"
   },
   "devDependencies": {
